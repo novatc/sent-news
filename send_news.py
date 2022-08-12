@@ -3,8 +3,7 @@ import logging
 import sys
 
 from pandas import read_csv
-from transformers import pipeline, DistilBertTokenizer, \
-    DistilBertForSequenceClassification
+from transformers import pipeline, DistilBertTokenizer, DistilBertForSequenceClassification
 
 from news_api import get_recent_headlines, json_to_dataframe, get_headlines_to_certain_category
 
@@ -43,7 +42,7 @@ def get_sentiment(model, articles_dataframe):
     articles_dataframe['sentiment'] = 'None'
 
     for index, row in articles_dataframe.iterrows():
-        articles_dataframe.at[index, 'sentiment'] = model(row['description'])[0]['label']
+        articles_dataframe.at[index, 'sentiment'] = model(row['summary'])[0]['label']
 
     return articles_dataframe
 
@@ -52,15 +51,24 @@ def get_emotion(model, articles_dataframe):
     articles_dataframe['emotion'] = 'None'
 
     for index, row in articles_dataframe.iterrows():
-        articles_dataframe.at[index, 'emotion'] = model(row['description'])[0]['label']
+        articles_dataframe.at[index, 'emotion'] = model(row['summary'])[0]['label']
 
     return articles_dataframe
+
+def get_summary(model, dataframe):
+    dataframe['summary'] = 'None'
+    print(dataframe.head())
+
+    for index, row in dataframe.iterrows():
+        dataframe.at[index, 'summary'] = model(row['content'])[0]['summary_text']
+
+    return dataframe
 
 
 def write_to_csv(dataframe_general, dataframe_category):
     # drop columns that are not needed
     dataframe_general = dataframe_general.drop(
-        columns=['urlToImage', 'publishedAt', 'source.id', 'author', 'content', 'url'])
+        columns=['urlToImage', 'publishedAt', 'source.id', 'author', 'url'])
 
     # save data to csv
     logging.info('Saving data to csv...')
@@ -71,6 +79,20 @@ def write_to_csv(dataframe_general, dataframe_category):
             columns=['urlToImage', 'publishedAt', 'source.id', 'author', 'content', 'url'])
         dataframe_category.to_csv('output/category_news.csv')
 
+def turn_dataframe_in_object(dataframe):
+    return dataframe.to_dict('records')
+
+def wellcome():
+    print(''' ________       _______       ________       _________        ________       _______       ___       __       ________      
+|\   ____\     |\  ___ \     |\   ___  \    |\___   ___\     |\   ___  \    |\  ___ \     |\  \     |\  \    |\   ____\     
+\ \  \___|_    \ \   __/|    \ \  \\ \  \   \|___ \  \_|     \ \  \\ \  \   \ \   __/|    \ \  \    \ \  \   \ \  \___|_    
+ \ \_____  \    \ \  \_|/__   \ \  \\ \  \       \ \  \       \ \  \\ \  \   \ \  \_|/__   \ \  \  __\ \  \   \ \_____  \   
+  \|____|\  \    \ \  \_|\ \   \ \  \\ \  \       \ \  \       \ \  \\ \  \   \ \  \_|\ \   \ \  \|\__\_\  \   \|____|\  \  
+    ____\_\  \    \ \_______\   \ \__\\ \__\       \ \__\       \ \__\\ \__\   \ \_______\   \ \____________\    ____\_\  \ 
+   |\_________\    \|_______|    \|__| \|__|        \|__|        \|__| \|__|    \|_______|    \|____________|   |\_________\
+   \|_________|                                                                                                 \|_________|
+                                                                                                                            
+                                                                                                                            ''')
 
 def send_news():
     parser = argparse.ArgumentParser()
@@ -88,8 +110,11 @@ def send_news():
 
     bin_model_path = 'distilbert-base-uncased-finetuned-sst-2-english'
     emotion_model_path = 'bhadresh-savani/distilbert-base-uncased-emotion'
-
+    summarization_model_path = 'facebook/bart-large-cnn'
+    wellcome()
     logging.info('Loading the model...')
+
+    summarizer = pipeline("summarization", model=summarization_model_path)
 
     if (args.category is not None) and (args.model == 'both'):
         logging.info('Preparing both model...')
@@ -101,6 +126,8 @@ def send_news():
                              return_all_scores=False)
 
         general, category_news = get_news(key=args.key, category=args.category)
+        general = get_summary(summarizer, general)
+        category_news = get_summary(summarizer, category_news)
         general = get_sentiment(bin_model, general)
         category_news = get_sentiment(bin_model, category_news)
 
@@ -119,6 +146,7 @@ def send_news():
                              return_all_scores=False)
 
         general = get_news(key=args.key, category=None)
+        general = get_summary(summarizer, general)
         general = get_sentiment(bin_model, general)
         general = get_emotion(emo_model, general)
 
@@ -131,6 +159,9 @@ def send_news():
         bin_model = prepare_model(bin_model, tokenizer)
 
         general, category_news = get_news(key=args.key, category=args.category)
+        general = get_summary(summarizer, general)
+        category_news = get_summary(summarizer, category_news)
+
         general = get_sentiment(bin_model, general)
         category_news = get_sentiment(bin_model, category_news)
         write_to_csv(general, category_news)
@@ -142,6 +173,7 @@ def send_news():
         bin_model = prepare_model(bin_model, tokenizer)
 
         general = get_news(key=args.key, category=None)
+        general = get_summary(summarizer, general)
         general = get_sentiment(bin_model, general)
         write_to_csv(general, None)
 
@@ -151,6 +183,9 @@ def send_news():
                              return_all_scores=False)
 
         general, category_news = get_news(key=args.key, category=args.category)
+        general = get_summary(summarizer, general)
+        category_news = get_summary(summarizer, category_news)
+
         general = get_emotion(emo_model, general)
         category_news = get_emotion(emo_model, category_news)
         write_to_csv(general, category_news)
@@ -161,6 +196,7 @@ def send_news():
                              return_all_scores=False)
 
         general = get_news(key=args.key, category=None)
+        general = get_summary(summarizer, general)
         general = get_emotion(emo_model, general)
         write_to_csv(general, None)
 
