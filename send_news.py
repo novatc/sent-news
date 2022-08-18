@@ -5,6 +5,7 @@ import sys
 from pandas import read_csv
 from transformers import pipeline, DistilBertTokenizer, DistilBertForSequenceClassification
 
+from db_client import save_articles
 from news_api import get_recent_headlines, json_to_dataframe, get_headlines_to_certain_category
 
 
@@ -55,9 +56,9 @@ def get_emotion(model, articles_dataframe):
 
     return articles_dataframe
 
+
 def get_summary(model, dataframe):
     dataframe['summary'] = 'None'
-    print(dataframe.head())
 
     for index, row in dataframe.iterrows():
         dataframe.at[index, 'summary'] = model(row['content'])[0]['summary_text']
@@ -79,8 +80,19 @@ def write_to_csv(dataframe_general, dataframe_category):
             columns=['urlToImage', 'publishedAt', 'source.id', 'author', 'content', 'url'])
         dataframe_category.to_csv('output/category_news.csv')
 
+
 def turn_dataframe_in_object(dataframe):
     return dataframe.to_dict('records')
+
+
+def dataframe_to_json(dataframe):
+    return dataframe.to_json(orient='records')
+
+
+def write_to_database(dataframe):
+    logging.info('Saving data to database...')
+    save_articles(dataframe)
+
 
 def wellcome():
     print(''' ________       _______       ________       _________        ________       _______       ___       __       ________      
@@ -93,6 +105,7 @@ def wellcome():
    \|_________|                                                                                                 \|_________|
                                                                                                                             
                                                                                                                             ''')
+
 
 def send_news():
     parser = argparse.ArgumentParser()
@@ -134,7 +147,9 @@ def send_news():
         general = get_emotion(emo_model, general)
         category_news = get_emotion(emo_model, category_news)
 
-        write_to_csv(general, category_news)
+        #write_to_csv(general, category_news)
+        write_to_database(general)
+        write_to_database(category_news)
 
     if (args.category is None) and (args.model == 'both'):
         logging.info('Preparing both model...')
@@ -150,7 +165,8 @@ def send_news():
         general = get_sentiment(bin_model, general)
         general = get_emotion(emo_model, general)
 
-        write_to_csv(general, None)
+        #write_to_csv(general, None)
+        write_to_database(general)
 
     if (args.category is not None) and (args.model == 'binary'):
         logging.info('Preparing binary model...')
@@ -164,7 +180,11 @@ def send_news():
 
         general = get_sentiment(bin_model, general)
         category_news = get_sentiment(bin_model, category_news)
-        write_to_csv(general, category_news)
+
+        #write_to_csv(general, category_news)
+
+        write_to_database(general)
+        write_to_database(category_news)
 
     if (args.category is None) and (args.model == 'binary'):
         logging.info('Preparing binary model...')
@@ -175,7 +195,10 @@ def send_news():
         general = get_news(key=args.key, category=None)
         general = get_summary(summarizer, general)
         general = get_sentiment(bin_model, general)
-        write_to_csv(general, None)
+
+        #write_to_csv(general, None)
+
+        write_to_database(general)
 
     if (args.category is not None) and (args.model == 'emotional'):
         logging.info('Preparing emotional model...')
@@ -188,7 +211,10 @@ def send_news():
 
         general = get_emotion(emo_model, general)
         category_news = get_emotion(emo_model, category_news)
-        write_to_csv(general, category_news)
+
+        #write_to_csv(general, category_news)
+        write_to_database(general)
+        write_to_database(category_news)
 
     if (args.category is None) and (args.model == 'emotional'):
         logging.info('Preparing emotional model...')
@@ -198,7 +224,8 @@ def send_news():
         general = get_news(key=args.key, category=None)
         general = get_summary(summarizer, general)
         general = get_emotion(emo_model, general)
-        write_to_csv(general, None)
+        #write_to_csv(general, None)
+        write_to_database(general)
 
 
 if __name__ == "__main__":
