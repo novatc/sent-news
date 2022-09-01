@@ -7,6 +7,7 @@ from transformers import pipeline, DistilBertTokenizer, DistilBertForSequenceCla
 
 from db_client import save_articles
 from news_api import get_recent_headlines, json_to_dataframe, get_headlines_to_certain_category
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 
 def prepare_model(model, tokenizer):
@@ -94,7 +95,7 @@ def write_to_database(dataframe):
     save_articles(dataframe)
 
 
-def wellcome():
+def welcome():
     print(''' ________       _______       ________       _________        ________       _______       ___       __       ________      
 |\   ____\     |\  ___ \     |\   ___  \    |\___   ___\     |\   ___  \    |\  ___ \     |\  \     |\  \    |\   ____\     
 \ \  \___|_    \ \   __/|    \ \  \\ \  \   \|___ \  \_|     \ \  \\ \  \   \ \   __/|    \ \  \    \ \  \   \ \  \___|_    
@@ -116,7 +117,7 @@ def send_news():
                         default='1356bdb2fd6c4b889edba37049b6ab2d')
     parser.add_argument('--model', type=str, required=True, help='Path to the model to use for prediction. Two '
                                                                  'models are available: binary and emotional classification.'
-                                                                 'use "both" if both models should be used.')
+                                                                 'use "both" if both models should be used.', default='both')
     parser.add_argument('--category', type=str, required=False, help='Category of news')
 
     args = parser.parse_args()
@@ -124,7 +125,7 @@ def send_news():
     bin_model_path = 'distilbert-base-uncased-finetuned-sst-2-english'
     emotion_model_path = 'bhadresh-savani/distilbert-base-uncased-emotion'
     summarization_model_path = 'facebook/bart-large-cnn'
-    wellcome()
+    welcome()
     logging.info('Loading the model...')
 
     summarizer = pipeline("summarization", model=summarization_model_path)
@@ -229,4 +230,6 @@ def send_news():
 
 
 if __name__ == "__main__":
-    sys.exit(send_news())
+    scheduler = BlockingScheduler()
+    scheduler.add_job(send_news, 'interval', hours=1)
+    scheduler.start()
