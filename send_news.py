@@ -115,7 +115,7 @@ def send_news():
                         help='News API key, necessary to access the API and to expand'
                              'the news database',
                         default='1356bdb2fd6c4b889edba37049b6ab2d')
-    parser.add_argument('--model', type=str, required=True, help='Path to the model to use for prediction. Two '
+    parser.add_argument('--model', type=str, required=False, help='Path to the model to use for prediction. Two '
                                                                  'models are available: binary and emotional classification.'
                                                                  'use "both" if both models should be used.', default='both')
     parser.add_argument('--category', type=str, required=False, help='Category of news')
@@ -230,6 +230,7 @@ def send_news():
 
 
 if __name__ == "__main__":
+    send_news()
     scheduler = BlockingScheduler()
     scheduler.add_job(send_news, 'interval', hours=1)
     scheduler.start()
