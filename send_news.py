@@ -1,11 +1,10 @@
 import argparse
 import logging
-import sys
 
 from pandas import read_csv
 from transformers import pipeline, DistilBertTokenizer, DistilBertForSequenceClassification
 
-from db_client import save_articles
+from db.db_client import save_articles
 from news_api import get_recent_headlines, json_to_dataframe, get_headlines_to_certain_category
 from apscheduler.schedulers.blocking import BlockingScheduler
 
@@ -116,8 +115,8 @@ def send_news():
                              'the news database',
                         default='1356bdb2fd6c4b889edba37049b6ab2d')
     parser.add_argument('--model', type=str, required=False, help='Path to the model to use for prediction. Two '
-                                                                 'models are available: binary and emotional classification.'
-                                                                 'use "both" if both models should be used.', default='both')
+                                                                 'local_models are available: binary and emotional classification.'
+                                                                 'use "both" if both local_models should be used.', default='both')
     parser.add_argument('--category', type=str, required=False, help='Category of news')
 
     args = parser.parse_args()

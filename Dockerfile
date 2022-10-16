@@ -3,8 +3,7 @@ WORKDIR /app
 COPY requirements.txt ./
 
 RUN pip install -r requirements.txt
-RUN pip install pymongo
 
 COPY . .
 
-CMD [ "python", "send_news.py"]
+CMD [ "python", "main.py"]
