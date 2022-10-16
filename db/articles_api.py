@@ -35,7 +35,7 @@ class Articles:
                 else:
                     print("Article already exists")
                     pass
-            time.sleep(600.0 - ((time.time() - start_time) % 60.0))
+            time.sleep(3600.0 - ((time.time() - start_time) % 60.0))
 
     def get_article_details(self, uri):
         q = QueryArticle(uri)
