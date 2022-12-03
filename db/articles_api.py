@@ -32,6 +32,7 @@ class Articles:
                 if len(firebase.get_article_by_uri(article['uri'])) == 0:
                     updated_article = analyser.analyse(article)
                     firebase.push(updated_article)
+                    logging.info('Article added to database: ' + updated_article['title'])
                 else:
                     print("Article already exists")
                     pass
