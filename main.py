@@ -1,14 +1,14 @@
 import logging
 import os
+from datetime import datetime
 
-import torch
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, BartForConditionalGeneration, \
-    AutoModelForSeq2SeqLM, BartTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BartForConditionalGeneration, \
+     BartTokenizer
 
-from db.articles_api import Articles
 from db.firebase_connection import FirebaseConnection
 from db.topics import Topics
 from text_analysis import Analyser
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 
 def welcome():
@@ -32,18 +32,19 @@ def check_for_local_model(model_path):
 
 
 sentiment_model_path = 'local_models/finiteautomata/bertweet-base-sentiment-analysis'
-emotion_model_path = 'local_models/j-hartmann/emotion-english-distilroberta-base'
+emotion_model_path = 'local_models/cardiffnlp/twitter-roberta-base-emotion'
+emotion_tokenizer_path = 'local_models/cadiffnlp/tokenizer'
 summary_model_path = 'local_models/facebook/bart-large-cnn'
 summary_tokenizer_path = 'local_models/facebook/token/bart-large-cnn'
 tokenize_path = 'local_models/finiteautomata/tokenizer'
 
 key = "2f01a585-19e6-4928-9f8f-18240ba81842"
 
-# welcome()
-if __name__ == '__main__':
+
+def sent_news():
     logging.basicConfig(level=logging.INFO)
     logging.info('Starting the program...')
-    #welcome()
+    welcome()
 
     if check_for_local_model(sentiment_model_path):
         logging.info('Loading sentiment model from local files...')
@@ -72,24 +73,33 @@ if __name__ == '__main__':
 
     if check_for_local_model(emotion_model_path):
         logging.info('Loading emotion model from local files...')
-        emotion_model = pipeline("text-classification", model=emotion_model_path, top_k=2)
+        emotion_model = AutoModelForSequenceClassification.from_pretrained(emotion_model_path)
+        emotion_tokenizer = AutoTokenizer.from_pretrained(emotion_tokenizer_path)
     else:
         logging.info('Downloading emotion model...')
-        emotion_model = pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", top_k=2)
+        emotion_model = AutoModelForSequenceClassification.from_pretrained("cardiffnlp/twitter-roberta-base-emotion")
+        emotion_tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-roberta-base-emotion")
 
         emotion_model.save_pretrained(emotion_model_path)
+        emotion_tokenizer.save_pretrained(emotion_tokenizer_path)
 
     analyser = Analyser(tokenizer_sentiment=tokenizer, sentiment_model=sentiment_model, summary_model=summarizer,
-                        emotion_model=emotion_model, tokenizer_summary=summary_tokenizer)
+                        emotion_model=emotion_model, emotion_tokenizer=emotion_tokenizer,
+                        tokenizer_summary=summary_tokenizer)
 
     logging.info('Initializing the database...')
     fire = FirebaseConnection('https://sent-news-357414-default-rtdb.europe-west1.firebasedatabase.app/',
                               'db/keys/sent-news-357414-firebase-adminsdk-okg5o-dfc08d365d.json')
 
-    articles_gateway = Articles(key)
     topic_gateway = Topics(key)
 
-
     logging.info('Starting the analysis...')
-    # articles_gateway.start_article_stream(analyser=analyser, firebase=fire)
     topic_gateway.get_topics(analyser=analyser, firebase=fire)
+# welcome()
+if __name__ == '__main__':
+    sent_news()
+    print('Starting scheduler...')
+    scheduler = BlockingScheduler()
+    scheduler.add_job(sent_news, 'interval', minutes=5)
+    scheduler.start()
+

@@ -15,21 +15,14 @@ class Topics:
         t = TopicPage(self.er)
         t.loadTopicPageFromER("b21e6fdb-8553-4f58-8b0c-468dec02465a")
 
-        start_time = time.time()
+        query = t.getArticles(count=10, sortBy="date", sortByAsc=False)
+        articleList = query.get("articles", {}).get("results", [])
 
-        while True:
-            query = t.getArticles(count=10, sortBy="date", sortByAsc=False)
-            articleList = query.get("articles", {}).get("results", [])
-            print("%d articles from Topic were added since the last call" % len(articleList))
-
-            for article in articleList:
-                if len(firebase.get_topic_article_by_uri(article['uri'])) == 0:
-                    updated_article = analyser.analyse(article)
-                    firebase.push_article_from_topic(updated_article)
-                    logging.info('Article added to database: ' + updated_article['title'])
-                else:
-                    print("Article already exists")
-                    pass
-            time.sleep(3600.0 - ((time.time() - start_time) % 60.0))
-
-
+        for article in articleList:
+            if len(firebase.get_topic_article_by_uri(article['uri'])) == 0:
+                updated_article = analyser.analyse(article)
+                firebase.push_article_from_topic(updated_article)
+                logging.info('Article added to database: ' + updated_article['title'])
+            else:
+                print("Article already exists")
+                pass

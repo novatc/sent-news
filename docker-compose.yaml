@@ -1,0 +1,5 @@
+services:
+  sent-news:
+    image: novatc/sent-news:latest
+    container_name: sent-news
+    build: .

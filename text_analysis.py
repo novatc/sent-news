@@ -1,11 +1,14 @@
+import csv
 import logging
+import urllib.request
 
+import numpy as np
 import torch
-from google.api.logging_pb2 import Logging
+from scipy.special import softmax
 
 
 class Analyser:
-    def __init__(self, sentiment_model, emotion_model, summary_model, tokenizer_sentiment, tokenizer_summary):
+    def __init__(self, sentiment_model, emotion_model, emotion_tokenizer, summary_model, tokenizer_sentiment, tokenizer_summary):
         logging.info('Initializing the analyser...')
 
         self.tokenizer_sentiment = tokenizer_sentiment
@@ -13,6 +16,7 @@ class Analyser:
         self.sentiment_model = sentiment_model
         self.summary_model = summary_model
         self.emotion_model = emotion_model
+        self.emotion_tokenizer = emotion_tokenizer
 
     def get_sentiment(self, text):
         logging.info('Getting the sentiment...')
@@ -32,8 +36,18 @@ class Analyser:
 
 
     def get_emotion(self, text):
+        labels = ['anger', 'joy', 'optimism', 'sadness']
         logging.info('Getting the emotion...')
-        return self.emotion_model(text)
+        encoded_input = self.emotion_tokenizer(text, return_tensors='pt')
+        output = self.emotion_model(**encoded_input)
+        scores = output[0][0].detach().numpy()
+        scores = softmax(scores)
+        ranking = np.argsort(scores)
+        ranking = ranking[::-1]
+        emotions = {}
+        for i in range(scores.shape[0]):
+            emotions[labels[ranking[i]]] = str(scores[ranking[i]])
+        return emotions
 
     def analyse(self, json_text):
         logging.info('Analysing the text...')
