@@ -41,7 +41,7 @@ tokenize_path = 'local_models/finiteautomata/tokenizer'
 key = "2f01a585-19e6-4928-9f8f-18240ba81842"
 
 
-def sent_news():
+def sent_news(fire_connection: FirebaseConnection):
     logging.basicConfig(level=logging.INFO)
     logging.info('Starting the program...')
     welcome()
@@ -87,19 +87,20 @@ def sent_news():
                         emotion_model=emotion_model, emotion_tokenizer=emotion_tokenizer,
                         tokenizer_summary=summary_tokenizer)
 
-    logging.info('Initializing the database...')
-    fire = FirebaseConnection('https://sent-news-357414-default-rtdb.europe-west1.firebasedatabase.app/',
-                              'db/keys/sent-news-357414-firebase-adminsdk-okg5o-dfc08d365d.json')
-
+    fire = fire_connection
     topic_gateway = Topics(key)
 
     logging.info('Starting the analysis...')
     topic_gateway.get_topics(analyser=analyser, firebase=fire)
 # welcome()
 if __name__ == '__main__':
-    sent_news()
+    logging.info('Initializing the database...')
+
+    fire = FirebaseConnection('https://sent-news-357414-default-rtdb.europe-west1.firebasedatabase.app/',
+                              'db/keys/sent-news-357414-firebase-adminsdk-okg5o-dfc08d365d.json')
+    sent_news(fire)
     print('Starting scheduler...')
     scheduler = BlockingScheduler()
-    scheduler.add_job(sent_news, 'interval', minutes=5)
+    scheduler.add_job(sent_news, 'interval', minutes=10, args=[fire])
     scheduler.start()
 
