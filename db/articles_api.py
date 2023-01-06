@@ -1,6 +1,6 @@
 from eventregistry import *
 
-from db.firebase_connection import FirebaseConnection
+from db.firestore import FirestoreConnection
 from text_analysis import Analyser
 
 key = "2f01a585-19e6-4928-9f8f-18240ba81842"
@@ -15,7 +15,7 @@ class Articles:
         # we limit here the results to 100. If you want more, remove or increasae maxItems
         return [article for article in q.execQuery(self.er, sortBy=sortBy, sortByAsc=sortByAsc, maxItems=maxItems)]
 
-    def start_article_stream(self, firebase: FirebaseConnection, analyser: Analyser):
+    def start_article_stream(self, firebase: FirestoreConnection, analyser: Analyser):
         recentQ = GetRecentArticles(self.er,
                                     lang=["eng"],
                                     recentActivityArticlesMaxArticleCount = 10,
@@ -29,9 +29,9 @@ class Articles:
             print("%d articles were added since the last call" % len(article_list))
 
             for article in article_list:
-                if len(firebase.get_article_by_uri(article['uri'])) == 0:
+                if len(firebase.get_topic_article_by_uri(article['uri'])) == 0:
                     updated_article = analyser.analyse(article)
-                    firebase.push(updated_article)
+                    firebase.add_article(updated_article)
                     logging.info('Article added to database: ' + updated_article['title'])
                 else:
                     print("Article already exists")

@@ -5,7 +5,7 @@ from datetime import datetime
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, BartForConditionalGeneration, \
      BartTokenizer
 
-from db.firebase_connection import FirebaseConnection
+from db.firestore import FirestoreConnection
 from db.topics import Topics
 from text_analysis import Analyser
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -41,7 +41,7 @@ tokenize_path = 'local_models/finiteautomata/tokenizer'
 key = "2f01a585-19e6-4928-9f8f-18240ba81842"
 
 
-def sent_news(fire_connection: FirebaseConnection):
+def sent_news(fire_connection: FirestoreConnection):
     logging.basicConfig(level=logging.INFO)
     logging.info('Starting the program...')
     welcome()
@@ -92,15 +92,29 @@ def sent_news(fire_connection: FirebaseConnection):
 
     logging.info('Starting the analysis...')
     topic_gateway.get_topics(analyser=analyser, firebase=fire)
+    emotion_model = None
+    emotion_tokenizer = None
+    summarizer = None
+    summary_tokenizer = None
+    sentiment_model = None
+    tokenizer = None
+    analyser = None
+    fire = None
+    topic_gateway = None
+    logging.info('Analysis finished, going to sleep...')
 # welcome()
-if __name__ == '__main__':
-    logging.info('Initializing the database...')
 
-    fire = FirebaseConnection('https://sent-news-357414-default-rtdb.europe-west1.firebasedatabase.app/',
-                              'db/keys/sent-news-357414-firebase-adminsdk-okg5o-dfc08d365d.json')
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    logging.info('Initializing the database...')
+    #check if the database is initialized
+
+    fire = FirestoreConnection()
     sent_news(fire)
-    print('Starting scheduler...')
+    logging.info('Starting scheduler...')
     scheduler = BlockingScheduler()
-    scheduler.add_job(sent_news, 'interval', minutes=10, args=[fire])
+    scheduler.add_job(sent_news, 'interval', hours=1, args=[fire])
     scheduler.start()
 
