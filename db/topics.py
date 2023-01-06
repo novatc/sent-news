@@ -29,4 +29,3 @@ class Topics:
                 logging.info("Article already exists")
                 pass
 
-        functools.cache.clear()
