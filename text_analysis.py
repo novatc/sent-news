@@ -53,9 +53,9 @@ class Analyser:
         logging.info('Analysing the text...')
         sum = self.get_summary(json_text['body'])
         # add emotion to json_text
-        json_text['emotion'] = self.get_emotion(json_text['source']['summary'])
+        json_text['emotion'] = self.get_emotion(sum)
         # add sentiment to json_text
-        json_text['sentiment'] = self.get_sentiment(json_text['source']['summary'])
+        json_text['sentiment'] = self.get_sentiment(sum)
         # add summary to json_text
         json_text['summary'] = sum
 
