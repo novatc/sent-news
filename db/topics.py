@@ -15,7 +15,7 @@ class Topics:
 
     def get_topics(self, firebase: FirestoreConnection, analyser: Analyser):
         t = TopicPage(self.er)
-        t.loadTopicPageFromER("b21e6fdb-8553-4f58-8b0c-468dec02465a")
+        t.loadTopicPageFromER("66e29a64-219f-41a5-a0a2-a8373feb86dd")
 
         query = t.getArticles(count=10, sortBy="date", sortByAsc=False)
         articleList = query.get("articles", {}).get("results", [])
