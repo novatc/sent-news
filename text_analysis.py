@@ -1,6 +1,4 @@
-import csv
 import logging
-import urllib.request
 
 import numpy as np
 import torch
