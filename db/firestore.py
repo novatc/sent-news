@@ -16,5 +16,11 @@ class FirestoreConnection:
 
         self.db.collection('articles').add(article)
 
+    def add_article_open_ai(self, article):
+        if article['source']['title'] == 'RT':
+            return
+
+        self.db.collection('articles_open_ai').add(article)
+
     def get_topic_article_by_uri(self, param):
         return self.db.collection('articles').where('uri', '==', param).get()
